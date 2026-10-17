@@ -1,0 +1,9 @@
+[submodule "services/core"]
+	path = services/core
+	url = https://github.com/mcittkmims/listing-core.git
+[submodule "services/scraper"]
+	path = services/scraper
+	url = https://github.com/mcittkmims/listing-scraper.git
+[submodule "services/vision"]
+	path = services/vision
+	url = https://github.com/mcittkmims/listing-vision.git
