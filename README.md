@@ -25,26 +25,26 @@ git clone --recurse-submodules https://github.com/mcittkmims/apartment-lens.git
 
 ```mermaid
 flowchart TB
-    users(["<b>Users</b><br/>people looking for a home"])
-    frontend["<b>Frontend</b><br/>the website, runs in<br/>the browser: map, flats,<br/>photo and video search"]
+    users([Users])
+    frontend["Frontend"]
 
-    subgraph gpu["GPU machine · runs once a day"]
-        vbatch["<b>Vision worker · batch</b><br/>turns new photos into<br/>vectors, checks if<br/>look-alike photos show<br/>the same room"]
+    subgraph gpu["GPU machine"]
+        vbatch["Vision worker · batch"]
     end
 
-    subgraph server["Server · always on"]
-        proxy["<b>Reverse proxy</b><br/>only public entry point:<br/>HTTPS, serves the website<br/>and photos, forwards<br/>API calls"]
-        core["<b>Core service</b><br/>REST API for the website,<br/>map search, groups ads<br/>into flats, review queue"]
-        vonline["<b>Vision worker · online</b><br/>fingerprints new photos,<br/>photo and video search<br/>in seconds"]
-        scraper["<b>Scraper service</b><br/>crawls sources every<br/>few hours, cleans up ads,<br/>saves ads, prices, photos"]
-        db[("<b>Database</b><br/>ads, flats, price history,<br/>photo vectors, job queue")]
-        store[("<b>Photo storage</b><br/>photo files from ads<br/>and user uploads")]
-        geo["<b>Geocoder</b><br/>turns an address into<br/>a point on the map"]
+    subgraph server["Server"]
+        proxy["Reverse proxy"]
+        core["Core service"]
+        vonline["Vision worker · online"]
+        scraper["Scraper service"]
+        db[("Database")]
+        store[("Photo storage")]
+        geo["Geocoder"]
     end
 
-    sources(["<b>Listing sources</b><br/>999.md and<br/>agency websites"])
+    sources([Listing sources])
 
-    users -->|use| frontend
+    users --> frontend
     frontend -->|HTTPS| proxy
     proxy -->|API calls| core
     proxy -->|photo files| store
