@@ -7,3 +7,6 @@
 [submodule "services/vision"]
 	path = services/vision
 	url = https://github.com/mcittkmims/listing-vision.git
+[submodule "services/frontend"]
+	path = services/frontend
+	url = https://github.com/mcittkmims/listing-frontend.git
