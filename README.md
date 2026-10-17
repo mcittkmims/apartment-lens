@@ -24,13 +24,9 @@ git clone --recurse-submodules https://github.com/mcittkmims/apartment-lens.git
 ## How it fits together
 
 ```mermaid
-flowchart TB
+flowchart LR
     users([Users])
     frontend["Frontend"]
-
-    subgraph gpu["GPU machine"]
-        vbatch["Vision worker · batch"]
-    end
 
     subgraph server["Server"]
         proxy["Reverse proxy"]
@@ -42,21 +38,24 @@ flowchart TB
         geo["Geocoder"]
     end
 
+    subgraph gpu["GPU machine"]
+        vbatch["Vision worker · batch"]
+    end
+
     sources([Listing sources])
 
     users --> frontend
     frontend -->|HTTPS| proxy
     proxy -->|API calls| core
-    proxy -->|photo files| store
     core <--> db
     vonline <-->|jobs| db
     vonline --> store
-    vbatch -.->|daily jobs| db
-    vbatch -.-> store
     scraper -->|ads, prices| db
     scraper -->|photos| store
     scraper -->|addresses| geo
-    scraper -->|crawls| sources
+    scraper --->|crawls| sources
+    db <-.->|daily jobs| vbatch
+    store -.-> vbatch
 ```
 
 ### Components
