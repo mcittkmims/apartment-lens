@@ -26,11 +26,11 @@ git clone --recurse-submodules https://github.com/mcittkmims/apartment-lens.git
 ```mermaid
 flowchart LR
     users([Users])
+    frontend["Frontend<br/>runs in the browser"]
     sources([999.md and agency websites])
 
     subgraph server["Server, always on"]
-        proxy["Reverse proxy"]
-        frontend["Frontend<br/>web app"]
+        proxy["Reverse proxy<br/>public entry point"]
         core["Core service<br/>API, search, matching"]
         scraper["Scraper service"]
         db[("PostgreSQL<br/>data and job queue")]
@@ -43,9 +43,10 @@ flowchart LR
         vbatch["Vision worker, batch<br/>vectors, same-room checks"]
     end
 
-    users -->|HTTPS| proxy
-    proxy -->|web app files| frontend
+    users -->|use| frontend
+    frontend -->|HTTPS, app files and API calls| proxy
     proxy -->|API calls| core
+    proxy -->|photo files| store
     scraper -->|crawls| sources
     scraper -->|ads, prices| db
     scraper -->|photos| store
@@ -63,7 +64,7 @@ flowchart LR
 2. **The online vision worker** fingerprints each new photo within seconds (SHA-256 and PDQ hash). Copies of the same ad across sources connect right away.
 3. **The core service** matches each new ad against known flats using facts, location, text and photo evidence. It links the ad to a flat, or puts unclear pairs in the review queue.
 4. **Once a day, the batch vision worker runs on a GPU machine.** It computes vectors for the day's new photos and checks look-alike photo pairs. The core service then re-matches the day's new ads with that evidence.
-5. **Users use the frontend:** map, property pages with every source's ad and price history, and photo or video search. The frontend only talks to the core service's API. Searches go through the job queue to the online vision worker.
+5. **Users use the frontend in their browser:** map, property pages with every source's ad and price history, and photo or video search. The browser loads the frontend from the reverse proxy, the server's only public entry point. After that, the frontend talks to the core service's API through the same proxy. Searches go through the job queue to the online vision worker.
 
 ## Design rules
 
