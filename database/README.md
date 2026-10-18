@@ -1,0 +1,109 @@
+# Database
+
+Apartment Lens uses one PostgreSQL database with PostGIS (map queries), pgvector (vector search) and pg_trgm (fuzzy text matching). The data is split into six schemas, and each service has a database role that can write only to its own schemas.
+
+## Core tables
+
+```mermaid
+erDiagram
+    source ||--o{ listing : publishes
+    listing ||--o{ listing_snapshot : "price history"
+    building ||--o{ property : contains
+    property ||--o{ property_listing : "linked to"
+    listing ||--o{ property_listing : "linked to"
+    listing ||--o{ listing_image : shows
+    image ||--o{ listing_image : "appears in"
+    image ||--o{ image_embedding : "has vector"
+    image_cluster ||--o{ image : groups
+
+    source {
+        smallint id PK
+        text code "999md or agency name"
+        text kind "portal or agency"
+    }
+    listing {
+        bigint id PK
+        smallint source_id FK
+        text external_id "ad id at the source"
+        smallint rooms
+        numeric area_m2
+        smallint floor
+        geography geom "map point"
+        bytea phone_hash
+        text status "active or gone"
+    }
+    listing_snapshot {
+        bigint listing_id FK
+        timestamptz captured_at
+        numeric price_eur
+        text status
+    }
+    building {
+        bigint id PK
+        geography geom
+        text address
+        text series "e.g. 143, bloc nou"
+    }
+    property {
+        bigint id PK
+        bigint building_id FK
+        smallint rooms
+        numeric area_m2
+        smallint floor
+    }
+    property_listing {
+        bigint property_id FK
+        bigint listing_id FK
+        timestamptz valid_from
+        timestamptz valid_to "set when a link is undone"
+    }
+    image {
+        bigint id PK
+        bytea sha256 UK
+        bit pdq "perceptual hash"
+        text role "interior, exterior, render"
+        bigint cluster_id FK
+    }
+    listing_image {
+        bigint listing_id FK
+        bigint image_id FK
+        smallint position
+    }
+    image_embedding {
+        bigint image_id FK
+        text model
+        halfvec vec "384 dimensions"
+    }
+    image_cluster {
+        bigint id PK
+        int distinct_units
+        text scope "unit or building"
+    }
+```
+
+## Schemas
+
+| Schema | Tables | Holds | Written by |
+|---|---|---|---|
+| `ingest` | `source`, `listing`, `listing_snapshot`, `crawl_run` | Ads as each source published them, and their price history | scraper |
+| `catalog` | `building`, `property`, `property_listing`, `match_evidence` | Properties, and which ads belong to each one | core |
+| `media` | `image`, `listing_image`, `image_embedding`, `image_cluster`, `pair_check` | Photos, their fingerprints and vectors, and same-room check results | scraper, vision |
+| `social` | `video`, `video_frame`, `mention` | Videos submitted for search | vision, core |
+| `app` | `user_account`, `saved_search`, `favorite`, `lens_query`, `match_report` | Users, their searches and their reports | core, vision |
+| `ops` | `job`, `review_item` | The job queue and the manual review queue | all services |
+
+## Rules
+
+**Price history.** A new `listing_snapshot` row is written only when the price or status changes. Each snapshot keeps the original price and currency plus a EUR value at that day's BNM rate.
+
+**Undoable grouping.** A wrong link between an ad and a property is closed by setting `valid_to`, never deleted, so every grouping decision can be reversed.
+
+**Photos.** One photo can appear in several ads, so photos link to ads through `listing_image`. A near-duplicate cluster used by ads with different floors or areas has `building` scope and never merges two properties.
+
+**Vectors.** Each vector is stored with its model name, so a new model can be added next to the old one.
+
+**Privacy.** Phone numbers are stored only as keyed hashes.
+
+## Migrations
+
+SQL migrations (Flyway) will live in `database/migrations/` and are applied before the services start.
