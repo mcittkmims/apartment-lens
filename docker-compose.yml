@@ -1,0 +1,55 @@
+# Apartment Lens: everything that runs on the server.
+# Copy .env.example to .env, fill in the secrets, then: docker compose up -d --build
+name: apartment-lens
+
+services:
+  db:
+    build: ./database
+    image: apartment-lens/postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lens
+      POSTGRES_USER: lens
+      POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:?set DB_OWNER_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    ports:
+      - "127.0.0.1:5432:5432"   # local access only, for psql and backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lens -d lens"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    shm_size: 256mb
+
+  # Applies database/migrations, then exits. The services start only after it succeeds.
+  migrate:
+    image: flyway/flyway:13.10.3
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./database/migrations:/flyway/sql:ro
+    environment:
+      FLYWAY_URL: jdbc:postgresql://db:5432/lens
+      FLYWAY_USER: lens
+      FLYWAY_PASSWORD: ${DB_OWNER_PASSWORD}
+      FLYWAY_PLACEHOLDERS_SCRAPER_PASSWORD: ${SCRAPER_DB_PASSWORD:?set SCRAPER_DB_PASSWORD in .env}
+    command: migrate
+
+  scraper:
+    build: ./services/scraper
+    image: apartment-lens/scraper
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lens
+      SPRING_DATASOURCE_USERNAME: scraper
+      SPRING_DATASOURCE_PASSWORD: ${SCRAPER_DB_PASSWORD}
+      SCRAPER_PHONE_HASH_KEY: ${PHONE_HASH_KEY:?set PHONE_HASH_KEY in .env}
+      TZ: Europe/Chisinau
+
+volumes:
+  pgdata:
