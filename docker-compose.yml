@@ -51,5 +51,20 @@ services:
       SCRAPER_PHONE_HASH_KEY: ${PHONE_HASH_KEY:?set PHONE_HASH_KEY in .env}
       TZ: Europe/Chisinau
 
+  # Loads the OpenStreetMap extract of Moldova into staging tables; run with
+  # "docker compose run --rm osm-load", then "docker compose run --rm scraper import-ref osm".
+  osm-load:
+    build: ./database/osm
+    image: apartment-lens/osm-load
+    profiles: ["tools"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: db
+      PGDATABASE: lens
+      PGUSER: scraper
+      PGPASSWORD: ${SCRAPER_DB_PASSWORD}
+
 volumes:
   pgdata:
