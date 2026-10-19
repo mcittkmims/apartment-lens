@@ -2,7 +2,7 @@
 
 Every flat and house for sale in Moldova on one map. Ads from 999.md and agency websites are grouped into one page per property, with its price history from every source, and users can find a property by searching with a photo or a video.
 
-> **Status:** design stage. The repositories contain design documents only; there is no code yet.
+> **Status:** the scraper collects 999.md and the database is in place. The other services are in design.
 
 ## Repositories
 
@@ -13,7 +13,7 @@ Every flat and house for sale in Moldova on one map. Ads from 999.md and agency 
 | [listing-scraper](https://github.com/mcittkmims/listing-scraper) | Java | Collecting and cleaning ads from 999.md and agency websites |
 | [listing-vision](https://github.com/mcittkmims/listing-vision) | Python | Photo fingerprints, image vectors, photo and video search |
 
-The service repositories are linked here as submodules under `services/`. Clone everything with `git clone --recurse-submodules https://github.com/mcittkmims/apartment-lens.git`.
+The service repositories are linked here as submodules under `services/`. Clone everything with `git clone --recurse-submodules https://github.com/mcittkmims/apartment-lens.git`, copy `.env.example` to `.env` with new secrets, and start with `docker compose up -d`.
 
 ## Architecture
 

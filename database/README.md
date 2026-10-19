@@ -8,6 +8,7 @@ Apartment Lens uses one PostgreSQL database with PostGIS (map queries), pgvector
 erDiagram
     source ||--o{ listing : publishes
     listing ||--o{ listing_snapshot : "price history"
+    listing ||--o{ listing_raw : "original content"
     building ||--o{ property : contains
     property ||--o{ property_listing : "linked to"
     listing ||--o{ property_listing : "linked to"
@@ -29,12 +30,20 @@ erDiagram
         numeric area_m2
         smallint floor
         geography geom "map point"
-        bytea phone_hash
+        text location_precision "building, street, district or locality"
+        bytea_array phone_hashes
         text status "active or gone"
+    }
+    listing_raw {
+        bigint listing_id FK
+        timestamptz fetched_at
+        bytea body_gzip "as the source returned it"
     }
     listing_snapshot {
         bigint listing_id FK
         timestamptz captured_at
+        numeric price_amount
+        text price_currency
         numeric price_eur
         text status
     }
@@ -85,7 +94,7 @@ erDiagram
 
 | Schema | Tables | Holds | Written by |
 |---|---|---|---|
-| `ingest` | `source`, `listing`, `listing_snapshot`, `crawl_run` | Ads as each source published them, and their price history | scraper |
+| `ingest` | `source`, `listing`, `listing_raw`, `listing_snapshot`, `crawl_run`, `exchange_rate` | Ads as each source published them and cleaned up, their original content, price history and BNM rates | scraper |
 | `catalog` | `building`, `property`, `property_listing`, `match_evidence` | Properties, and which ads belong to each one | core |
 | `media` | `image`, `listing_image`, `image_embedding`, `image_cluster`, `pair_check` | Photos, their fingerprints and vectors, and same-room check results | scraper, vision |
 | `social` | `video`, `video_frame`, `mention` | Videos submitted for search | vision, core |
@@ -95,6 +104,8 @@ erDiagram
 ## Rules
 
 **Price history.** A new `listing_snapshot` row is written only when the price or status changes. Each snapshot keeps the original price and currency plus a EUR value at that day's BNM rate.
+
+**Original content.** `listing_raw` keeps each ad as the source returned it, stored again only when it changes, so the cleaned-up fields can be computed again with better rules.
 
 **Undoable grouping.** A wrong link between an ad and a property is closed by setting `valid_to`, never deleted, so every grouping decision can be reversed.
 
@@ -106,4 +117,4 @@ erDiagram
 
 ## Migrations
 
-SQL migrations (Flyway) will live in `database/migrations/` and are applied before the services start.
+SQL migrations (Flyway) live in `database/migrations/`. The `migrate` service in Docker Compose applies them before the other services start, and sets each service role's password.
