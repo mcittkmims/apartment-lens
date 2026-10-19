@@ -1,6 +1,6 @@
 # Database
 
-Apartment Lens uses one PostgreSQL database with PostGIS (map queries), pgvector (vector search) and pg_trgm (fuzzy text matching). The data is split into six schemas, and each service has a database role that can write only to its own schemas.
+Apartment Lens uses one PostgreSQL database with PostGIS (map queries), pgvector (vector search) and pg_trgm (fuzzy text matching). The data is split into seven schemas, and each service has a database role that can write only to its own schemas.
 
 ## Core tables
 
@@ -100,6 +100,7 @@ erDiagram
 | `social` | `video`, `video_frame`, `mention` | Videos submitted for search | vision, core |
 | `app` | `user_account`, `saved_search`, `favorite`, `lens_query`, `match_report` | Users, their searches and their reports | core, vision |
 | `ops` | `job`, `review_item` | The job queue and the manual review queue | all services |
+| `ref` | `admin_area`, `locality`, `street`, `address_point` | Streets, house numbers and boundaries from the cadastre, OpenStreetMap and map.md, used to place ads on the map | scraper (imports) |
 
 ## Rules
 

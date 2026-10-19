@@ -13,7 +13,7 @@ Every flat and house for sale in Moldova on one map. Ads from 999.md and agency 
 | [listing-scraper](https://github.com/mcittkmims/listing-scraper) | Java | Collecting and cleaning ads from 999.md and agency websites |
 | [listing-vision](https://github.com/mcittkmims/listing-vision) | Python | Photo fingerprints, image vectors, photo and video search |
 
-The service repositories are linked here as submodules under `services/`. Clone everything with `git clone --recurse-submodules https://github.com/mcittkmims/apartment-lens.git`, copy `.env.example` to `.env` with new secrets, and start with `docker compose up -d`.
+The service repositories are linked here as submodules under `services/`. Clone everything with `git clone --recurse-submodules https://github.com/mcittkmims/apartment-lens.git`, copy `.env.example` to `.env` with new secrets, and start with `docker compose up -d`. Load the street and address data once (and again to refresh it) with `docker compose run --rm osm-load` and `docker compose run --rm scraper import-ref`.
 
 ## Architecture
 
@@ -29,7 +29,6 @@ flowchart LR
         scraper["Scraper service"]
         db[("Database")]
         store[("Photo storage")]
-        geo["Geocoder"]
     end
 
     subgraph gpu["GPU machine"]
@@ -46,7 +45,6 @@ flowchart LR
     vonline --> store
     scraper -->|ads, prices| db
     scraper -->|photos| store
-    scraper -->|addresses| geo
     scraper --->|crawls| sources
     db <-.->|daily jobs| vbatch
     store -.-> vbatch
@@ -57,8 +55,7 @@ flowchart LR
 | Frontend | The website, running in the user's browser |
 | Reverse proxy | The only public entry point: HTTPS, website and photo files, API calls to the core service |
 | Core service | Answers API calls and decides which ads describe the same property |
-| Scraper service | Crawls the sources every few hours and stores cleaned-up ads, price changes and photos |
-| Geocoder | Turns an address into a point on the map |
+| Scraper service | Crawls the sources every few hours and stores cleaned-up ads, price changes and photos; turns addresses into map points with the street and address data in the database |
 | Vision worker · online | Fingerprints new photos and answers photo and video searches within seconds |
 | Vision worker · batch | Runs once a day on a GPU: image vectors and same-room checks for new photos |
 | Database | All data, plus the job queue the services use to hand work to each other |
@@ -73,7 +70,7 @@ The backend services never call each other; they only share the database. That i
 
 ## Database
 
-One PostgreSQL database with six schemas, one per area of the system. Tables, relationships and access rules are described in [database/README.md](database/README.md).
+One PostgreSQL database with seven schemas, one per area of the system. Tables, relationships and access rules are described in [database/README.md](database/README.md).
 
 ## Roadmap
 
