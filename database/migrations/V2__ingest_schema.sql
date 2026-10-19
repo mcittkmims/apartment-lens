@@ -32,6 +32,8 @@ create table ingest.crawl_run (
 );
 
 create index crawl_run_source_started on ingest.crawl_run (source_id, started_at desc);
+-- At most one running crawl per source.
+create unique index crawl_run_one_running on ingest.crawl_run (source_id) where status = 'running';
 
 -- Official BNM exchange rates, used to convert prices to EUR.
 create table ingest.exchange_rate (
@@ -115,7 +117,7 @@ create table ingest.listing (
 
     -- Map point
     geom               geography(point, 4326),
-    location_source    text check (location_source in ('pin', 'street')),
+    location_source    text check (location_source in ('pin', 'street', 'place')),
     location_precision text check (location_precision in ('building', 'street', 'district', 'locality')),
 
     -- Contacts and media
