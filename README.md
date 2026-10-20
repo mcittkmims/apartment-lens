@@ -2,7 +2,7 @@
 
 Every flat and house for sale in Moldova on one map. Ads from 999.md and agency websites are grouped into one page per property, with its price history from every source, and users can find a property by searching with a photo or a video.
 
-> **Status:** the scraper collects 999.md and the database is in place. The other services are in design.
+> **Status:** the scraper collects 999.md and places every ad on the map; the database is in place. The other services are in design.
 
 ## Repositories
 
@@ -36,6 +36,7 @@ flowchart LR
     end
 
     sources([Listing sources])
+    addresses([Address data])
 
     users --> frontend
     frontend -->|HTTPS| proxy
@@ -46,6 +47,7 @@ flowchart LR
     scraper -->|ads, prices| db
     scraper -->|photos| store
     scraper --->|crawls| sources
+    scraper --->|imports| addresses
     db <-.->|daily jobs| vbatch
     store -.-> vbatch
 ```
@@ -55,7 +57,8 @@ flowchart LR
 | Frontend | The website, running in the user's browser |
 | Reverse proxy | The only public entry point: HTTPS, website and photo files, API calls to the core service |
 | Core service | Answers API calls and decides which ads describe the same property |
-| Scraper service | Crawls the sources every few hours and stores cleaned-up ads, price changes and photos; turns addresses into map points with the street and address data in the database |
+| Scraper service | Crawls the sources every few hours and stores cleaned-up ads, price changes and photos, each placed on the map from its pin or address |
+| Address data | Streets, house numbers and town boundaries from the cadastre and OpenStreetMap, imported into the database |
 | Vision worker · online | Fingerprints new photos and answers photo and video searches within seconds |
 | Vision worker · batch | Runs once a day on a GPU: image vectors and same-room checks for new photos |
 | Database | All data, plus the job queue the services use to hand work to each other |
