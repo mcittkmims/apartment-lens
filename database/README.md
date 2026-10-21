@@ -32,6 +32,7 @@ erDiagram
         geography geom "map point"
         text location_precision "building, street, district or locality"
         bytea_array phone_hashes
+        text_array crosslinks "the same ad on other sites"
         text status "active or gone"
     }
     listing_raw {
@@ -106,7 +107,9 @@ erDiagram
 
 **Price history.** A new `listing_snapshot` row is written only when the price or status changes. Each snapshot keeps the original price and currency plus a EUR value at that day's BNM rate.
 
-**Original content.** `listing_raw` keeps each ad as the source returned it, stored again only when it changes, so the cleaned-up fields can be computed again with better rules.
+**Original content.** `listing_raw` keeps each ad as the source returned it, stored again only when it changes, so the cleaned-up fields can be computed again with better rules. For sites that serve HTML pages it keeps an extract of what describes the property.
+
+**Links between sites.** When a site names its copy of an ad on another site (an agency naming the 999.md ad), `crosslinks` records it, for example `999md:105689225`. The core service uses it as strong evidence that two ads are one property.
 
 **Undoable grouping.** A wrong link between an ad and a property is closed by setting `valid_to`, never deleted, so every grouping decision can be reversed.
 
@@ -114,7 +117,7 @@ erDiagram
 
 **Vectors.** Each vector is stored with its model name, so a new model can be added next to the old one.
 
-**Privacy.** Phone numbers are stored only as keyed hashes.
+**Privacy.** The cleaned-up fields hold phone numbers only as keyed hashes; the original content keeps the numbers a site publishes. Private data a site returns but does not publish, such as an owner's phone or an agency's internal notes, is removed before anything is stored.
 
 ## Migrations
 
