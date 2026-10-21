@@ -74,6 +74,8 @@ The backend services never call each other; they only share the database. That i
 
 **Searches.** A user uploads a photo or video on the website. The online vision worker finds the most similar listing photos and groups them by property; for a video, every frame votes. Results arrive in about a second for a photo and under a minute for a video.
 
+**Photos.** Each photo is downloaded once and kept on the server's disk as a file named by the hash of its content, so a photo shown on several sites is stored once. The scraper and the online vision worker share that folder. The GPU machine reaches the server over a private connection (SSH or a private network, never an open port): once a day it reads its jobs from the database, copies only the photos those jobs name, and writes the results back. Photos keep their link at the source too, so property pages can show either our copy or the original.
+
 ## Database
 
 One PostgreSQL database with seven schemas, one per area of the system. Tables, relationships and access rules are described in [database/README.md](database/README.md).
