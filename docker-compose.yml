@@ -35,6 +35,7 @@ services:
       FLYWAY_USER: lens
       FLYWAY_PASSWORD: ${DB_OWNER_PASSWORD}
       FLYWAY_PLACEHOLDERS_SCRAPER_PASSWORD: ${SCRAPER_DB_PASSWORD:?set SCRAPER_DB_PASSWORD in .env}
+      FLYWAY_PLACEHOLDERS_GEODATA_PASSWORD: ${GEODATA_DB_PASSWORD:-}
     command: migrate
 
   scraper:
@@ -51,20 +52,23 @@ services:
       SCRAPER_PHONE_HASH_KEY: ${PHONE_HASH_KEY:?set PHONE_HASH_KEY in .env}
       TZ: Europe/Chisinau
 
-  # Loads the OpenStreetMap extract of Moldova into staging tables; run with
-  # "docker compose run --rm osm-load", then "docker compose run --rm scraper import-ref osm".
-  osm-load:
-    build: ./database/osm
-    image: apartment-lens/osm-load
+  # Refreshes the address data (cadastre and OpenStreetMap) in the ref schema, every few months:
+  # "docker compose run --rm geodata", then "docker compose restart scraper".
+  geodata:
+    build: ./database/geodata
+    image: apartment-lens/geodata
     profiles: ["tools"]
     depends_on:
       migrate:
         condition: service_completed_successfully
     environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lens
+      SPRING_DATASOURCE_USERNAME: geodata
+      SPRING_DATASOURCE_PASSWORD: ${GEODATA_DB_PASSWORD:-}
       PGHOST: db
       PGDATABASE: lens
-      PGUSER: scraper
-      PGPASSWORD: ${SCRAPER_DB_PASSWORD}
+      PGUSER: geodata
+      PGPASSWORD: ${GEODATA_DB_PASSWORD:-}
 
 volumes:
   pgdata:

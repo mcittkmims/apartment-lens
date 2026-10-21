@@ -13,7 +13,7 @@ Every flat and house for sale in Moldova on one map. Ads from 999.md and agency 
 | [listing-scraper](https://github.com/mcittkmims/listing-scraper) | Java | Collecting and cleaning ads from 999.md and agency websites |
 | [listing-vision](https://github.com/mcittkmims/listing-vision) | Python | Photo fingerprints, image vectors, photo and video search |
 
-The service repositories are linked here as submodules under `services/`. Clone everything with `git clone --recurse-submodules https://github.com/mcittkmims/apartment-lens.git`, copy `.env.example` to `.env` with new secrets, and start with `docker compose up -d`. Load the street and address data once (and again to refresh it) with `docker compose run --rm osm-load` and `docker compose run --rm scraper import-ref`.
+The service repositories are linked here as submodules under `services/`. Clone everything with `git clone --recurse-submodules https://github.com/mcittkmims/apartment-lens.git`, copy `.env.example` to `.env` with new secrets, and start with `docker compose up -d`. Load the street and address data once, and again every few months to refresh it, with `docker compose run --rm geodata`, then `docker compose restart scraper`.
 
 ## Architecture
 
@@ -27,6 +27,7 @@ flowchart LR
         core["Core service"]
         vonline["Vision worker · online"]
         scraper["Scraper service"]
+        geodata["Address data tool"]
         db[("Database")]
         store[("Photo storage")]
     end
@@ -36,7 +37,7 @@ flowchart LR
     end
 
     sources([Listing sources])
-    addresses([Address data])
+    addresses([Cadastre and OpenStreetMap])
 
     users --> frontend
     frontend -->|HTTPS| proxy
@@ -47,7 +48,8 @@ flowchart LR
     scraper -->|ads, prices| db
     scraper -->|photos| store
     scraper --->|crawls| sources
-    scraper --->|imports| addresses
+    geodata -->|streets, addresses| db
+    geodata --->|downloads| addresses
     db <-.->|daily jobs| vbatch
     store -.-> vbatch
 ```
@@ -58,7 +60,8 @@ flowchart LR
 | Reverse proxy | The only public entry point: HTTPS, website and photo files, API calls to the core service |
 | Core service | Answers API calls and decides which ads describe the same property |
 | Scraper service | Crawls the sources every few hours and stores cleaned-up ads, price changes and photos, each placed on the map from its pin or address |
-| Address data | Streets, house numbers and town boundaries from the cadastre and OpenStreetMap, imported into the database |
+| Address data tool | Run every few months: loads streets, house numbers and town boundaries from the cadastre and OpenStreetMap, which the scraper uses to place ads |
+| Cadastre and OpenStreetMap | The public address data of Moldova |
 | Vision worker · online | Fingerprints new photos and answers photo and video searches within seconds |
 | Vision worker · batch | Runs once a day on a GPU: image vectors and same-room checks for new photos |
 | Database | All data, plus the job queue the services use to hand work to each other |
