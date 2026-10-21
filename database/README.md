@@ -13,7 +13,8 @@ erDiagram
     property ||--o{ property_listing : "linked to"
     listing ||--o{ property_listing : "linked to"
     listing ||--o{ listing_image : shows
-    image ||--o{ listing_image : "appears in"
+    source_photo ||--o{ listing_image : "appears in"
+    image ||--o{ source_photo : "is the file of"
     image ||--o{ image_embedding : "has vector"
     image_cluster ||--o{ image : groups
 
@@ -74,10 +75,15 @@ erDiagram
         text role "interior, exterior, render"
         bigint cluster_id FK
     }
+    source_photo {
+        smallint source_id PK
+        text photo_key PK "the site's name for it"
+        bigint image_id FK "null until downloaded"
+    }
     listing_image {
         bigint listing_id FK
-        bigint image_id FK
         smallint position
+        text photo_key FK
     }
     image_embedding {
         bigint image_id FK
@@ -97,7 +103,7 @@ erDiagram
 |---|---|---|---|
 | `ingest` | `source`, `listing`, `listing_raw`, `listing_snapshot`, `crawl_run`, `exchange_rate` | Ads as each source published them and cleaned up, their original content, price history and BNM rates | scraper |
 | `catalog` | `building`, `property`, `property_listing`, `match_evidence` | Properties, and which ads belong to each one | core |
-| `media` | `image`, `listing_image`, `image_embedding`, `image_cluster`, `pair_check` | Photos, their fingerprints and vectors, and same-room check results | scraper, vision |
+| `media` | `image`, `source_photo`, `listing_image`, `image_embedding`, `image_cluster`, `pair_check` | Photos, their fingerprints and vectors, and same-room check results | scraper, vision |
 | `social` | `video`, `video_frame`, `mention` | Videos submitted for search | vision, core |
 | `app` | `user_account`, `saved_search`, `favorite`, `lens_query`, `match_report` | Users, their searches and their reports | core, vision |
 | `ops` | `job`, `review_item` | The job queue and the manual review queue | all services |
@@ -113,7 +119,7 @@ erDiagram
 
 **Undoable grouping.** A wrong link between an ad and a property is closed by setting `valid_to`, never deleted, so every grouping decision can be reversed.
 
-**Photos.** One photo can appear in several ads, so photos link to ads through `listing_image`. A near-duplicate cluster used by ads with different floors or areas has `building` scope and never merges two properties.
+**Photos.** A photo is downloaded once per site (`source_photo`, by the site's name for it) and stored once per content (`image`, by its SHA-256), so the same picture on three sites is one file. Ads list their photos in order through `listing_image`. Each new image is announced to the vision workers with a job in `ops.job`. A near-duplicate cluster used by ads with different floors or areas has `building` scope and never merges two properties.
 
 **Vectors.** Each vector is stored with its model name, so a new model can be added next to the old one.
 

@@ -51,6 +51,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SCRAPER_DB_PASSWORD}
       SCRAPER_PHONE_HASH_KEY: ${PHONE_HASH_KEY:?set PHONE_HASH_KEY in .env}
       TZ: Europe/Chisinau
+    volumes:
+      - photos:/data/photos   # shared with the online vision worker
 
   # Refreshes the address data (cadastre and OpenStreetMap) in the ref schema, every few months:
   # "docker compose run --rm geodata", then "docker compose restart scraper".
@@ -72,3 +74,4 @@ services:
 
 volumes:
   pgdata:
+  photos:
